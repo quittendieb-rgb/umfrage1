@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Umfrage</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .question-block h2 {
+            color: #dc2626;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #dc2626;
+        }
+
+        button {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto 0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(220, 38, 38, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .responses {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #ddd;
+        }
+
+        .responses h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .response-item {
+            background: #fee2e2;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #dc2626;
+        }
+
+        .response-question {
+            font-weight: bold;
+            color: #dc2626;
+            margin-bottom: 5px;
+        }
+
+        .response-answer {
+            color: #333;
+            white-space: pre-wrap;
+        }
+
+        .response-time {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Du bist Studierender am Campus Unter den Eichen der Hochschule RheinMain? Dann äußere hier deine Meinung zu den Wegen deines Campus</h1>
+        
+        <div class="success-message" id="successMessage">
+            Vielen Dank! Ihre Antwort wurde gespeichert.
+        </div>
+
+        <div class="question-block">
+            <h2>Frage 1: Was ist deine Meinung zu der aktuellen Wegeführung und Beschilderung auf dem Campus?</h2>
+            <textarea id="answer1" placeholder="Ihre Antwort hier eingeben..."></textarea>
+        </div>
+
+        <div class="question-block">
+            <h2>Frage 2: Hast du weitere Verbesserungsvorschläge für die Wege deines Campus?</h2>
+            <textarea id="answer2" placeholder="Ihre Antwort hier eingeben..."></textarea>
+        </div>
+
+        <button onclick="submitSurvey()">Antworten absenden</button>
+
+        <div class="responses" id="responsesSection" style="display: none;">
+            <h2>Bisherige Antworten</h2>
+            <div id="responsesList"></div>
+        </div>
+    </div>
+
+    <script>
+        const responses = [];
+
+        async function loadResponses() {
+            try {
+                const result = await window.storage.get('survey-responses');
+                if (result && result.value) {
+                    const data = JSON.parse(result.value);
+                    responses.push(...data);
+                    displayResponses();
+                }
+            } catch (error) {
+                console.log('Keine vorherigen Antworten gefunden');
+            }
+        }
+
+        async function submitSurvey() {
+            const answer1 = document.getElementById('answer1').value.trim();
+            const answer2 = document.getElementById('answer2').value.trim();
+
+            if (!answer1 || !answer2) {
+                alert('Bitte beantworten Sie beide Fragen.');
+                return;
+            }
+
+            const newResponse = {
+                id: Date.now(),
+                timestamp: new Date().toLocaleString('de-DE'),
+                answers: [
+                    { question: 'Was ist deine Meinung zu der aktuellen Wegeführung und Beschilderung auf dem Campus?', answer: answer1 },
+                    { question: 'Hast du weitere Verbesserungsvorschläge für die Wege deines Campus?', answer: answer2 }
+                ]
+            };
+
+            responses.push(newResponse);
+
+            try {
+                await window.storage.set('survey-responses', JSON.stringify(responses));
+                
+                document.getElementById('answer1').value = '';
+                document.getElementById('answer2').value = '';
+                
+                const successMsg = document.getElementById('successMessage');
+                successMsg.style.display = 'block';
+                setTimeout(() => {
+                    successMsg.style.display = 'none';
+                }, 3000);
+
+                displayResponses();
+            } catch (error) {
+                console.error('Fehler beim Speichern:', error);
+                alert('Fehler beim Speichern der Antwort. Bitte versuchen Sie es erneut.');
+            }
+        }
+
+        function displayResponses() {
+            const responsesList = document.getElementById('responsesList');
+            const responsesSection = document.getElementById('responsesSection');
+
+            if (responses.length === 0) {
+                responsesSection.style.display = 'none';
+                return;
+            }
+
+            responsesSection.style.display = 'block';
+            responsesList.innerHTML = '';
+
+            responses.slice().reverse().forEach(response => {
+                response.answers.forEach(qa => {
+                    const div = document.createElement('div');
+                    div.className = 'response-item';
+                    div.innerHTML = `
+                        <div class="response-question">${qa.question}</div>
+                        <div class="response-answer">${qa.answer}</div>
+                        <div class="response-time">${response.timestamp}</div>
+                    `;
+                    responsesList.appendChild(div);
+                });
+            });
+        }
+
+        loadResponses();
+    </script>
+</body>
+</html>
